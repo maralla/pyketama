@@ -1,17 +1,23 @@
-import atexit
+from libc.stdlib cimport malloc, free
+from libc.string cimport memcpy
 
 cdef extern from "ketama.h":
-    ctypedef struct ketama_continuum:
+    ctypedef struct continuum_t:
         pass
+
+    ctypedef struct domain_t:
+        char slot[36]
+        unsigned long weight
 
     ctypedef struct mcs:
         unsigned int point
-        char ip[22]
+        domain_t *domain
 
-    int ketama_roll(ketama_continuum *contptr, char *filename)
-    void ketama_smoke(ketama_continuum contptr)
-    mcs* ketama_get_server(char*, ketama_continuum)
-    void ketama_print_continuum(ketama_continuum c)
+    int ketama_create(continuum_t *contptr, const domain_t *domains, unsigned int num_domains)
+    int ketama_add(continuum_t*, const domain_t*)
+    void ketama_init(continuum_t*)
+    void ketama_free(continuum_t *contptr)
+    mcs* ketama_get(char*, continuum_t*)
     char* ketama_error()
 
 
@@ -24,37 +30,81 @@ def _bytes(s):
         return s.encode("utf-8")
     return s
 
-cdef class _Continuum:
-    cdef public ketama_continuum _continum
 
-    def __cinit__(self, filename):
-        cdef ketama_continuum continum
+cdef class Continuum:
+    cdef public continuum_t _continum
+    cdef public dict _values
 
-        r = ketama_roll(&continum, <char*>filename)
+    def __cinit__(self, config=[]):
+        '''
+        :param config: list, element can be a string, a tuple like (key,  weight) or like (key, value, weight), key should be a string
+        '''
+        cdef continuum_t continum
+        cdef domain_t *domains
+
+        ketama_init(&continum)
+
+        self._continum = continum
+        self._values = {}
+
+        size = len(config)
+
+        if config:
+            domains = <domain_t*>malloc(sizeof(domain_t) * size)
+            try:
+                for i, c in enumerate(config):
+                    if isinstance(config[0], str):
+                        key, value, weight = c, c, 100
+                    elif len(config[0]) == 2:
+                        key, weight = c
+                        value = key
+                    elif len(config[0]) == 3:
+                        key, value, weight = c
+
+                    if weight <= 0:
+                        raise KetamaError(
+                            "Invalid weight value {}".format(weight))
+
+                    slot = _bytes(key)
+                    slot_len = len(slot)
+
+                    memcpy(domains[i].slot, <char*>slot, slot_len)
+                    domains[i].slot[slot_len] = '\0'
+                    domains[i].weight = weight
+                    self._values[slot] = value
+
+                r = ketama_create(&self._continum, domains, size)
+            finally:
+                free(domains)
+
+            if not r:
+                raise KetamaError(ketama_error().decode("ascii"))
+
+    def __dealloc__(self):
+        ketama_free(&self._continum)
+
+    def __setitem__(self, key, val):
+        cdef domain_t domain
+
+        slot, weight = key if isinstance(key, tuple) else (key, 100)
+
+        slot = _bytes(slot)
+        slot_len = len(slot)
+
+        memcpy(domain.slot, <char*>slot, len(slot))
+        domain.slot[slot_len] = '\0'
+        domain.weight = weight
+        r = ketama_add(&self._continum, &domain)
         if not r:
             raise KetamaError(ketama_error().decode("ascii"))
 
-        self._continum = continum
+        self._values[slot] = val
 
-    def __dealloc__(self):
-        ketama_smoke(self._continum)
-
-    def get_server(self, k):
+    def __getitem__(self, k):
         cdef bytes key = _bytes(k)
-        cdef mcs *mcsarr = ketama_get_server(<char*>key, self._continum)
+        cdef mcs *mcsarr = ketama_get(<char*>key, &self._continum)
 
-        return mcsarr[0].point, mcsarr[0].ip
+        if not mcsarr:
+            raise KetamaError(ketama_error().decode("ascii"))
 
-    def print_points(self):
-        ketama_print_continuum(self._continum)
-
-
-_continuum_map = {}
-
-def create_continuum(filename):
-    filename = _bytes(filename)
-    if filename not in _continuum_map:
-        _continuum_map[filename] = _Continuum(filename)
-    return _continuum_map[filename]
-
-atexit.register(lambda: _continuum_map.clear())
+        return self._values[mcsarr[0].domain[0].slot]
