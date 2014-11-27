@@ -2,6 +2,7 @@
 
 from ketama import Continuum
 
+
 def test_init():
     data = ['127.0.0.1:11211', '127.0.0.1:12212']
     cont = Continuum(data)
@@ -14,6 +15,7 @@ def test_init_weight():
     cont = Continuum(data)
 
     assert cont["test"] == '127.0.0.1:12212'
+
 
 def test_init_value():
     data = [('tom', {'a': "dict"}, 500), ('jerry', [123], 800),

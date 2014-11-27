@@ -2,4 +2,6 @@
 
 from .ketama import Continuum, KetamaError
 
-__all__ = ["Continuum"]
+__version__ = "0.2.0"
+
+__all__ = ["Continuum", "KetamaError"]
