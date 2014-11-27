@@ -1,5 +1,7 @@
 pyketama
 ========
+![build](https://img.shields.io/travis/maralla/pyketama.svg)
+
 pyketama is a cython implementation of ketama consistent hashing algorithm.
 
 
