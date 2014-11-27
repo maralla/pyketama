@@ -1,1 +1,2 @@
 include contrib/*.c contrib/*.h ketama/ketama.c
+include README.md
