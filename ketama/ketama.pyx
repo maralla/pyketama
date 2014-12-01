@@ -1,12 +1,14 @@
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
+DEF SLOT_LEN = 37
+
 cdef extern from "ketama.h":
     ctypedef struct continuum_t:
         pass
 
     ctypedef struct domain_t:
-        char slot[36]
+        char slot[SLOT_LEN]
         unsigned long weight
 
     ctypedef struct mcs:
@@ -68,6 +70,11 @@ cdef class Continuum:
                     slot = _bytes(key)
                     slot_len = len(slot)
 
+                    if slot_len > SLOT_LEN - 1:
+                        raise KetamaError("Key '{}' too long. "
+                                          "Max key length is {}".format(
+                            key, SLOT_LEN - 1))
+
                     memcpy(domains[i].slot, <char*>slot, slot_len)
                     domains[i].slot[slot_len] = '\0'
                     domains[i].weight = weight
@@ -91,7 +98,11 @@ cdef class Continuum:
         slot = _bytes(slot)
         slot_len = len(slot)
 
-        memcpy(domain.slot, <char*>slot, len(slot))
+        if slot_len > SLOT_LEN - 1:
+            raise KetamaError("Key '{}' too long. Max key length is {}".format(
+                key, SLOT_LEN - 1))
+
+        memcpy(domain.slot, <char*>slot, slot_len)
         domain.slot[slot_len] = '\0'
         domain.weight = weight
         r = ketama_add(&self._continum, &domain)

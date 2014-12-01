@@ -82,15 +82,21 @@ mcs* ketama_get(char* key, continuum_t *cont)
 void create_continuum(continuum_t *contptr)
 {
     mcs continuum[contptr->num_domains * 160];
-    unsigned int i, k, cont = 0;
+    unsigned int i, k, digits, num, cont = 0;
 
     for(i = 0; i < contptr->num_domains; i++) {
         float pct = (float)(contptr->domains[i].weight) / (float)contptr->weight;
         unsigned int ks = floorf(pct * 40.0 * (float)contptr->num_domains);
+        num = ks;
+
+        for (digits = 0; num > 0; digits++) {
+            num /= 10;
+        }
+
+        char ss[SLOT_LEN + 1 + digits];
 
         for(k = 0; k < ks; k++) {
             /* 40 hashes, 4 numbers per hash = 160 points per server */
-            char ss[30];
             unsigned char digest[16];
 
             sprintf(ss, "%s-%d", contptr->domains[i].slot, k);
