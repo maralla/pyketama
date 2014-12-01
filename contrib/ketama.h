@@ -1,11 +1,13 @@
 #ifndef KETAMA_H__
 #define KETAMA_H__
 
+#define SLOT_LEN 37
+
 typedef int (*compfn)(const void*, const void*);
 
 typedef struct
 {
-    char slot[36];
+    char slot[SLOT_LEN];
     unsigned long weight;
 } domain_t;
 
