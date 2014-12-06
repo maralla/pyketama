@@ -26,7 +26,7 @@ ext = Extension("ketama.ketama", ["contrib/md5.c", "contrib/ketama.c",
 
 setup(
     name="pyketama",
-    version="0.2.0",
+    version="0.2.1",
     author="maralla",
     author_email="maralla.ai@gmail.com",
     url="https://github.com/maralla/pyketama",
