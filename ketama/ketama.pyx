@@ -34,12 +34,14 @@ def _bytes(s):
 
 
 cdef class Continuum:
-    cdef public continuum_t _continum
-    cdef public dict _values
+    cdef continuum_t _continum
+    cdef dict _values
 
-    def __cinit__(self, config=[]):
+    def __cinit__(self, config=()):
         '''
-        :param config: list, element can be a string, a tuple like (key,  weight) or like (key, value, weight), key should be a string
+        :param config: list, element can be a string, a tuple like
+                       (key,  weight) or like (key, value, weight),
+                       key should be a string.
         '''
         cdef continuum_t continum
         cdef domain_t *domains
